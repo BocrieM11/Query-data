@@ -6,17 +6,10 @@ __pycache__/
 *.pyc
 *.pyo
 
-# 临时分析文件
-analysis_output.txt
-diagnosis.txt
-new_videos.txt
-new_videos_raw.txt
-v8_check.txt
-v81_samples.txt
-v91_final_check.txt
-whisper_analysis.txt
-whisper_samples.txt
-transcribe_log.txt
+# 临时日志文件
+logs/
+
+# 旧版脚本在old_scripts/ — 保留在仓库中供参考
 
 # 旧版输出
 sharegpt_output/
