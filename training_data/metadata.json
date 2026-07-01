@@ -1,26 +1,56 @@
 {
-  "dataset": "Japanese_Elderly_Care_AI_Companion_v9.1",
-  "version": "9.1.0",
-  "total": 4521,
+  "dataset": "Japanese_Elderly_Care_AI_Companion_v10.1",
+  "version": "10.1.0",
+  "total": 12073,
   "splits": {
-    "train": 3614,
-    "val": 453,
-    "test": 454
+    "train": 9655,
+    "val": 1208,
+    "test": 1210
   },
-  "avg_turns": 6.1,
-  "avg_chars": 260,
-  "ai_unique_responses": 2056,
-  "ai_repeat_rate": 81.2,
-  "top10_response_share": 18.2,
-  "real_data_pct": 75.9,
-  "real_elderly_pct": 70.4,
-  "improvements_v91": [
-    "AI回复多样性+122%: 928→2056唯一回复",
-    "Top10回复占比: 50%+→18.2%",
-    "上下文感知回复: 8话题×3意图×3情感",
-    "话题平衡: 孤独+300, 施設+250, 日常+200, 健康+150",
-    "老年人发言增强: 34→49字 (+44%)",
-    "文本变化注入: 敬语/前后缀/句子重组",
-    "平均字符: 183→260 (+42%)"
-  ]
+  "sources": {
+    "V9_topic_balanced": 576,
+    "real_elderly_whisper": 10297,
+    "V5_realistic": 198,
+    "real_elderly_youtube_v5": 454,
+    "real_corpus_slice": 248,
+    "V5_synthetic": 286,
+    "V5_cantonese_expanded": 14
+  },
+  "real_data_pct": 92.7,
+  "real_elderly_pct": 89.0,
+  "avg_turns": 5.8,
+  "avg_chars": 245.0,
+  "avg_human_chars": 41.0,
+  "avg_gpt_chars": 44.0,
+  "ai_unique_responses": 10501,
+  "ai_repeat_rate": 69.8,
+  "topic_distribution": {
+    "daily": 155,
+    "pension": 2889,
+    "nostalgia": 1430,
+    "facility": 126,
+    "work": 494,
+    "death": 593,
+    "gratitude": 3431,
+    "health": 597,
+    "hobby": 477,
+    "general": 865,
+    "family": 792,
+    "technology": 63,
+    "loneliness": 93,
+    "community": 68
+  },
+  "improvements_v10": [
+    "新增6个话题：临终/丧失、怀旧/回忆、科技、感恩、邻里社区 (8→14话题)",
+    "意图类型扩展：4→8 (nostalgia/grief/confusion/gratitude)",
+    "AI回复模板：86→400+ (14话题×8意图)",
+    "从Whisper JSON额外提取7,746条对话（宽松合并策略）",
+    "修复话题错配率15-20%→<5%",
+    "AI回复长度自适应（人类长叙事→AI长回复，35→40字）",
+    "变化注入增强：30%→55%，新增敬语变化/句子重组/方言注入",
+    "关西方言密度12%，AI回复也开始出现方言",
+    "总数据量4,521→12,073 (+167%)",
+    "真实数据率75.9%→92.7%"
+  ],
+  "top10_response_share": 16.1
 }
