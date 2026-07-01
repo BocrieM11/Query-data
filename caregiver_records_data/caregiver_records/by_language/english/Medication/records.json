@@ -1,0 +1,106 @@
+[
+  {
+    "id": "REC-EN-0119",
+    "category": "03",
+    "category_label": "Medication",
+    "language": "en",
+    "source": "CMS MDS 3.0 / Jotform Caregiver Log",
+    "source_type": "adapted_from_template",
+    "facility_type": "Sunrise Nursing & Rehab Center",
+    "resident_id": "R202",
+    "resident_info": {
+      "resident_id": "R202",
+      "age": 79,
+      "gender": "Male",
+      "care_level": "Level 2",
+      "primary_condition": "Stroke (Left Hemiplegia)",
+      "room_number": "402",
+      "mobility": "Wheelchair",
+      "communication": "Good"
+    },
+    "datetime": "2024-09-02T00:00",
+    "shift": "Morning",
+    "caregiver_name": "John Davis",
+    "record_text": "Insulin injection 07:15 Lantus SoloStar 10 units SC abdomen. Site rotated to left lower quadrant. No signs of lipodystrophy. Breakfast consumed within 30 minutes. No hypoglycemia symptoms.",
+    "tags": [
+      "服薬",
+      "血糖"
+    ],
+    "vital_signs": null,
+    "meal_intake": "100%",
+    "fluid_intake_ml": 350,
+    "mood": "Stable",
+    "follow_up_needed": false,
+    "follow_up_detail": null,
+    "blood_pressure": null
+  },
+  {
+    "id": "REC-EN-0118",
+    "category": "03",
+    "category_label": "Medication",
+    "language": "en",
+    "source": "CMS MDS 3.0 / Jotform Caregiver Log",
+    "source_type": "adapted_from_template",
+    "facility_type": "Maple Grove Senior Living",
+    "resident_id": "R203",
+    "resident_info": {
+      "resident_id": "R203",
+      "age": 91,
+      "gender": "Female",
+      "care_level": "Level 4",
+      "primary_condition": "Parkinson's, Osteoporosis",
+      "room_number": "403",
+      "mobility": "Cane",
+      "communication": "Fair"
+    },
+    "datetime": "2024-09-02T00:00",
+    "shift": "Day",
+    "caregiver_name": "Sarah Johnson",
+    "record_text": "Medication administration 08:00 Metformin 500mg PO with breakfast. Fasting BG checked prior. Resident self-administered with supervision. No adverse effects. Next dose 18:00 with dinner.",
+    "tags": [
+      "服薬",
+      "血糖"
+    ],
+    "vital_signs": null,
+    "meal_intake": "100%",
+    "fluid_intake_ml": 300,
+    "mood": "Alert",
+    "follow_up_needed": false,
+    "follow_up_detail": null,
+    "blood_pressure": null
+  },
+  {
+    "id": "REC-EN-0120",
+    "category": "03",
+    "category_label": "Medication",
+    "language": "en",
+    "source": "CMS MDS 3.0 / Jotform Caregiver Log",
+    "source_type": "adapted_from_template",
+    "facility_type": "Sunrise Nursing & Rehab Center",
+    "resident_id": "R206",
+    "resident_info": {
+      "resident_id": "R206",
+      "age": 77,
+      "gender": "Male",
+      "care_level": "Level 2",
+      "primary_condition": "CHF, CKD Stage 3",
+      "room_number": "405",
+      "mobility": "Cane",
+      "communication": "Good"
+    },
+    "datetime": "2024-09-03T00:00",
+    "shift": "Day",
+    "caregiver_name": "John Davis",
+    "record_text": "New medication order: Furosemide 20mg PO daily AM starting today. Added to existing regimen. Double check completed with second nurse. Medication record updated. Family notified of change.",
+    "tags": [
+      "服薬"
+    ],
+    "vital_signs": null,
+    "meal_intake": null,
+    "fluid_intake_ml": null,
+    "mood": "Stable",
+    "follow_up_needed": true,
+    "follow_up_detail": "Monitor output and BP",
+    "blood_pressure": null
+  }
+]

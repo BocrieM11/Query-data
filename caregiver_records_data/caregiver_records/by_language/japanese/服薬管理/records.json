@@ -1,0 +1,165 @@
+[
+  {
+    "id": "REC-JA-0032",
+    "category": "03",
+    "category_label": "服薬管理",
+    "language": "ja",
+    "source": "厚生労働省介護記録標準仕様準拠",
+    "source_type": "adapted_from_template",
+    "facility_type": "有料老人ホーム「もみじの郷」",
+    "resident_id": "R003",
+    "resident_info": {
+      "resident_id": "R003",
+      "age": 93,
+      "gender": "女",
+      "care_level": "要介護4",
+      "primary_condition": "Parkinson病・骨粗鬆症",
+      "room_number": "203",
+      "mobility": "杖",
+      "communication": "やや困難"
+    },
+    "datetime": "2024-09-03T00:00",
+    "shift": "早番",
+    "caregiver_name": "田中花子",
+    "record_text": "【経管服薬】8:00 PEGより: ランソプラゾールOD15mg粉砕懸濁、アムロジピンOD5mg粉砕。注入前後フラッシュ水50ml。逆流嘔吐なし。",
+    "tags": [
+      "服薬",
+      "経管栄養"
+    ],
+    "vital_signs": {
+      "body_temp": 36.4,
+      "blood_pressure_sys": 122,
+      "blood_pressure_dia": null,
+      "pulse": null,
+      "respiration": null,
+      "spO2": null,
+      "blood_sugar": null
+    },
+    "meal_intake": 74,
+    "fluid_intake_ml": 68,
+    "mood": null,
+    "follow_up_needed": false,
+    "follow_up_detail": null,
+    "blood_pressure": null
+  },
+  {
+    "id": "REC-JA-0029",
+    "category": "03",
+    "category_label": "服薬管理",
+    "language": "ja",
+    "source": "厚生労働省介護記録標準仕様準拠",
+    "source_type": "adapted_from_template",
+    "facility_type": "介護老人保健施設「ひまわり」",
+    "resident_id": "R005",
+    "resident_info": {
+      "resident_id": "R005",
+      "age": 75,
+      "gender": "男",
+      "care_level": "要介護1",
+      "primary_condition": "糖尿病・高血圧",
+      "room_number": "204",
+      "mobility": "自立",
+      "communication": "良好"
+    },
+    "datetime": "2024-09-02T00:00",
+    "shift": "早番",
+    "caregiver_name": "鈴木直子",
+    "record_text": "【服薬介助】8:30 朝食後: アムロジピン5mg、ランソプラゾール15mg。口腔内確認。飲み込み良好。副作用症状なし。",
+    "tags": [
+      "服薬"
+    ],
+    "vital_signs": {
+      "body_temp": 36.5,
+      "blood_pressure_sys": 132,
+      "blood_pressure_dia": null,
+      "pulse": null,
+      "respiration": null,
+      "spO2": null,
+      "blood_sugar": null
+    },
+    "meal_intake": 80,
+    "fluid_intake_ml": 74,
+    "mood": null,
+    "follow_up_needed": false,
+    "follow_up_detail": null,
+    "blood_pressure": null
+  },
+  {
+    "id": "REC-JA-0030",
+    "category": "03",
+    "category_label": "服薬管理",
+    "language": "ja",
+    "source": "厚生労働省介護記録標準仕様準拠",
+    "source_type": "adapted_from_template",
+    "facility_type": "介護老人保健施設「ひまわり」",
+    "resident_id": "R001",
+    "resident_info": {
+      "resident_id": "R001",
+      "age": 88,
+      "gender": "女",
+      "care_level": "要介護3",
+      "primary_condition": "Alzheimer型認知症",
+      "room_number": "201",
+      "mobility": "歩行器",
+      "communication": "中等度障害"
+    },
+    "datetime": "2024-09-01T00:00",
+    "shift": "日中",
+    "caregiver_name": "伊藤恵子",
+    "record_text": "【インスリン注射】7:15 ランタスXR 8単位腹部皮下注。注射部位:左下腹部（前回と別部位）。低血糖症状なし。朝食全量確認。",
+    "tags": [
+      "服薬",
+      "血糖測定"
+    ],
+    "vital_signs": null,
+    "meal_intake": 74,
+    "fluid_intake_ml": 70,
+    "mood": null,
+    "follow_up_needed": false,
+    "follow_up_detail": null,
+    "blood_pressure": null
+  },
+  {
+    "id": "REC-JA-0031",
+    "category": "03",
+    "category_label": "服薬管理",
+    "language": "ja",
+    "source": "厚生労働省介護記録標準仕様準拠",
+    "source_type": "adapted_from_template",
+    "facility_type": "介護老人保健施設「ひまわり」",
+    "resident_id": "R005",
+    "resident_info": {
+      "resident_id": "R005",
+      "age": 75,
+      "gender": "男",
+      "care_level": "要介護1",
+      "primary_condition": "糖尿病・高血圧",
+      "room_number": "204",
+      "mobility": "自立",
+      "communication": "良好"
+    },
+    "datetime": "2024-09-03T00:00",
+    "shift": "夜勤",
+    "caregiver_name": "中村優",
+    "record_text": "【新処方開始】本日よりフロセミド20mg朝追加。アムロジピン継続。ダブルチェック済。服薬手帳更新。家族連絡済。",
+    "tags": [
+      "服薬",
+      "家族"
+    ],
+    "vital_signs": {
+      "body_temp": 36.5,
+      "blood_pressure_sys": 130,
+      "blood_pressure_dia": null,
+      "pulse": null,
+      "respiration": null,
+      "spO2": null,
+      "blood_sugar": null
+    },
+    "meal_intake": 76,
+    "fluid_intake_ml": 72,
+    "mood": null,
+    "follow_up_needed": true,
+    "follow_up_detail": "利尿作用観察",
+    "blood_pressure": null
+  }
+]
