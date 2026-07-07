@@ -1,0 +1,324 @@
+{
+  "classifier": "keyword_score_v1",
+  "topics": {
+    "gratitude": {
+      "ja": "感謝・感恩",
+      "zh": "感恩"
+    },
+    "pension": {
+      "ja": "年金・経済",
+      "zh": "年金"
+    },
+    "nostalgia": {
+      "ja": "懐かしさ・思い出",
+      "zh": "怀旧"
+    },
+    "family": {
+      "ja": "家族",
+      "zh": "家族"
+    },
+    "health": {
+      "ja": "健康・医療",
+      "zh": "健康"
+    },
+    "death": {
+      "ja": "死・喪失・臨終",
+      "zh": "临终"
+    },
+    "work": {
+      "ja": "仕事・職業",
+      "zh": "工作"
+    },
+    "hobby": {
+      "ja": "趣味・楽しみ",
+      "zh": "兴趣"
+    },
+    "daily": {
+      "ja": "日常・生活",
+      "zh": "日常"
+    },
+    "facility": {
+      "ja": "施設・介護施設",
+      "zh": "设施"
+    },
+    "loneliness": {
+      "ja": "孤独・寂しさ",
+      "zh": "孤独"
+    },
+    "community": {
+      "ja": "近所・地域・コミュニティ",
+      "zh": "邻里"
+    },
+    "technology": {
+      "ja": "テクノロジー・機械",
+      "zh": "科技"
+    },
+    "general": {
+      "ja": "一般・雑談",
+      "zh": "一般"
+    }
+  },
+  "intents": {
+    "nostalgia": {
+      "ja": "懐かしむ",
+      "zh": "怀旧"
+    },
+    "grief": {
+      "ja": "悲しみ・喪失",
+      "zh": "悲伤/丧失"
+    },
+    "confusion": {
+      "ja": "困惑・迷い",
+      "zh": "困惑"
+    },
+    "gratitude": {
+      "ja": "感謝",
+      "zh": "感谢"
+    },
+    "complaint": {
+      "ja": "不満・愚痴",
+      "zh": "抱怨"
+    },
+    "inquiry": {
+      "ja": "質問・問い合わせ",
+      "zh": "询问"
+    },
+    "sharing": {
+      "ja": "共有・報告",
+      "zh": "分享"
+    },
+    "request": {
+      "ja": "依頼・お願い",
+      "zh": "请求"
+    }
+  },
+  "total_records": 20140,
+  "topic_distribution": {
+    "gratitude": 6374,
+    "pension": 4361,
+    "family": 2570,
+    "health": 1343,
+    "nostalgia": 1147,
+    "work": 1006,
+    "daily": 793,
+    "hobby": 755,
+    "facility": 539,
+    "general": 526,
+    "loneliness": 270,
+    "death": 189,
+    "community": 164,
+    "technology": 103
+  },
+  "intent_distribution": {
+    "gratitude": 6535,
+    "inquiry": 4323,
+    "request": 3923,
+    "sharing": 2170,
+    "grief": 1022,
+    "confusion": 881,
+    "complaint": 865,
+    "nostalgia": 421
+  },
+  "topic_intent_matrix": {
+    "gratitude": {
+      "nostalgia": 88,
+      "grief": 344,
+      "confusion": 170,
+      "gratitude": 3321,
+      "complaint": 213,
+      "inquiry": 809,
+      "sharing": 589,
+      "request": 840
+    },
+    "pension": {
+      "nostalgia": 79,
+      "grief": 221,
+      "confusion": 369,
+      "gratitude": 1167,
+      "complaint": 267,
+      "inquiry": 901,
+      "sharing": 360,
+      "request": 997
+    },
+    "nostalgia": {
+      "nostalgia": 142,
+      "grief": 33,
+      "confusion": 19,
+      "gratitude": 194,
+      "complaint": 39,
+      "inquiry": 318,
+      "sharing": 117,
+      "request": 285
+    },
+    "family": {
+      "nostalgia": 45,
+      "grief": 86,
+      "confusion": 98,
+      "gratitude": 534,
+      "complaint": 155,
+      "inquiry": 673,
+      "sharing": 432,
+      "request": 547
+    },
+    "health": {
+      "nostalgia": 17,
+      "grief": 67,
+      "confusion": 71,
+      "gratitude": 452,
+      "complaint": 64,
+      "inquiry": 255,
+      "sharing": 113,
+      "request": 304
+    },
+    "death": {
+      "nostalgia": 0,
+      "grief": 146,
+      "confusion": 2,
+      "gratitude": 14,
+      "complaint": 3,
+      "inquiry": 7,
+      "sharing": 5,
+      "request": 12
+    },
+    "work": {
+      "nostalgia": 26,
+      "grief": 8,
+      "confusion": 41,
+      "gratitude": 225,
+      "complaint": 62,
+      "inquiry": 397,
+      "sharing": 83,
+      "request": 164
+    },
+    "hobby": {
+      "nostalgia": 7,
+      "grief": 15,
+      "confusion": 7,
+      "gratitude": 84,
+      "complaint": 12,
+      "inquiry": 273,
+      "sharing": 75,
+      "request": 282
+    },
+    "daily": {
+      "nostalgia": 5,
+      "grief": 3,
+      "confusion": 18,
+      "gratitude": 233,
+      "complaint": 14,
+      "inquiry": 233,
+      "sharing": 94,
+      "request": 193
+    },
+    "facility": {
+      "nostalgia": 0,
+      "grief": 53,
+      "confusion": 51,
+      "gratitude": 218,
+      "complaint": 6,
+      "inquiry": 82,
+      "sharing": 63,
+      "request": 66
+    },
+    "loneliness": {
+      "nostalgia": 0,
+      "grief": 38,
+      "confusion": 9,
+      "gratitude": 22,
+      "complaint": 2,
+      "inquiry": 44,
+      "sharing": 133,
+      "request": 22
+    },
+    "community": {
+      "nostalgia": 3,
+      "grief": 1,
+      "confusion": 6,
+      "gratitude": 55,
+      "complaint": 5,
+      "inquiry": 31,
+      "sharing": 41,
+      "request": 22
+    },
+    "technology": {
+      "nostalgia": 0,
+      "grief": 1,
+      "confusion": 6,
+      "gratitude": 15,
+      "complaint": 18,
+      "inquiry": 20,
+      "sharing": 10,
+      "request": 33
+    },
+    "general": {
+      "nostalgia": 9,
+      "grief": 6,
+      "confusion": 14,
+      "gratitude": 1,
+      "complaint": 5,
+      "inquiry": 280,
+      "sharing": 55,
+      "request": 156
+    }
+  },
+  "per_split": {
+    "train": {
+      "gratitude": 5097,
+      "pension": 3513,
+      "family": 2079,
+      "health": 1070,
+      "nostalgia": 923,
+      "work": 783,
+      "daily": 623,
+      "hobby": 582,
+      "facility": 433,
+      "general": 427,
+      "loneliness": 211,
+      "death": 151,
+      "community": 132,
+      "technology": 85
+    },
+    "val": {
+      "gratitude": 636,
+      "pension": 419,
+      "family": 243,
+      "health": 133,
+      "work": 109,
+      "nostalgia": 108,
+      "hobby": 93,
+      "daily": 81,
+      "general": 60,
+      "facility": 49,
+      "loneliness": 38,
+      "death": 19,
+      "community": 15,
+      "technology": 11
+    },
+    "test": {
+      "gratitude": 641,
+      "pension": 429,
+      "family": 248,
+      "health": 140,
+      "nostalgia": 116,
+      "work": 114,
+      "daily": 89,
+      "hobby": 80,
+      "facility": 57,
+      "general": 39,
+      "loneliness": 21,
+      "death": 19,
+      "community": 17,
+      "technology": 7
+    }
+  },
+  "per_source": {
+    "real_elderly_whisper": 10222,
+    "real_elderly_csv": 8179,
+    "V9_topic_balanced": 570,
+    "real_elderly_youtube_v5": 439,
+    "V5_synthetic": 283,
+    "real_corpus_slice": 244,
+    "V5_realistic": 196,
+    "V5_cantonese_expanded": 7
+  }
+}

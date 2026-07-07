@@ -1,0 +1,57 @@
+{
+  "dataset": "Japanese_Elderly_Care_AI_Companion_v10.1",
+  "version": "10.1.0",
+  "total": 20160,
+  "splits": {
+    "train": 16125,
+    "val": 2016,
+    "test": 2019
+  },
+  "sources": {
+    "real_elderly_csv": 8180,
+    "real_elderly_whisper": 10222,
+    "V5_synthetic": 285,
+    "real_elderly_youtube_v5": 447,
+    "V9_topic_balanced": 570,
+    "V5_realistic": 198,
+    "real_corpus_slice": 246,
+    "V5_cantonese_expanded": 12
+  },
+  "real_data_pct": 95.7,
+  "real_elderly_pct": 93.5,
+  "avg_turns": 5.7,
+  "avg_chars": 263.0,
+  "avg_human_chars": 45.0,
+  "avg_gpt_chars": 48.0,
+  "ai_unique_responses": 20745,
+  "ai_repeat_rate": 63.8,
+  "topic_distribution": {
+    "death": 998,
+    "gratitude": 5967,
+    "nostalgia": 2347,
+    "hobby": 795,
+    "family": 1614,
+    "pension": 4777,
+    "health": 1079,
+    "technology": 99,
+    "daily": 197,
+    "general": 989,
+    "loneliness": 176,
+    "work": 766,
+    "community": 135,
+    "facility": 221
+  },
+  "improvements_v10": [
+    "新增6个话题：临终/丧失、怀旧/回忆、科技、感恩、邻里社区 (8→14话题)",
+    "意图类型扩展：4→8 (nostalgia/grief/confusion/gratitude)",
+    "AI回复模板：86→400+ (14话题×8意图)",
+    "从Whisper JSON额外提取7,746条对话（宽松合并策略）",
+    "修复话题错配率15-20%→<5%",
+    "AI回复长度自适应（人类长叙事→AI长回复，35→40字）",
+    "变化注入增强：30%→55%，新增敬语变化/句子重组/方言注入",
+    "关西方言密度12%，AI回复也开始出现方言",
+    "总数据量4,521→12,073 (+167%)",
+    "真实数据率75.9%→92.7%"
+  ],
+  "top10_response_share": 13.1
+}
