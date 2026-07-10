@@ -1,321 +1,231 @@
-# 日语老年关怀AI伴侣 训练数据集
+# さくら（Sakura）— 日语老年情绪陪伴 AI
 
-> ShareGPT格式 · 日语+关西方言 · 20,160条多轮对话 · 14个生活话题  
-> 用于 Qwen2.5-7B-Instruct LoRA 微调（LLaMA-Factory）
+> 80岁的AI朋友「さくら」，温暖自然地和养老院老人聊天。  
+> 基于 ArrowCanaria 8B 本地推理 + LangGraph 状态图编排 + DeepSeek 翻译/记忆提取。
 
 ---
 
-## 数据概览
+## 架构总览
 
 ```
-总对话数    20,160 条
-├── 训练集   16,125 条 (80%)
-├── 验证集    2,016 条 (10%)
-└── 测试集    2,019 条 (10%)
+浏览器 (:8015)
+    │
+    ▼
+┌─────────────────────────────────────────────────┐
+│  companion (FastAPI :8015)                       │
+│  ├─ /                                              │
+│  ├─ /v1/langgraph/chat        非流式               │
+│  ├─ /v1/langgraph/chat/stream 流式 (SSE)           │
+│  ├─ /v1/langgraph/translate   翻译 (DeepSeek)      │
+│  ├─ /v1/langgraph/log         对话日志 CRUD         │
+│  └─ /v1/langgraph/profile/:id 用户画像             │
+│                                                    │
+│  LangGraph StateGraph:                             │
+│  input_guard → emotion_detect ‖ memory_retrieve    │
+│       → context_assemble → generate_response       │
+│       → quality_check ←→ (retry loop)              │
+│       → clean + translate + remember               │
+└────────────────────┬────────────────────────────┘
+                     │ OpenAI-compatible API
+                     ▼
+┌─────────────────────────────────────────────────┐
+│  arrowcanaria_server (FastAPI :8014)              │
+│  ├─ /v1/chat/completions   推理 (stream/non)      │
+│  └─ /v1/models              模型列表              │
+│                                                    │
+│  ArrowCanaria-Llama-8B-SFT-v0.1                   │
+│  4-bit BitsAndBytes量化, SDPA attention            │
+│  RTX 4060, ~4.5GB VRAM                            │
+└─────────────────────────────────────────────────┘
 ```
+
+两个服务分离：:8014 纯模型推理（无业务逻辑），:8015 负责所有编排、翻译、日志和前端。
+
+---
+
+## 快速启动
+
+### 1. 环境变量
+
+```bash
+# .env
+DEEPSEEK_API_KEY=sk-xxx   # 翻译 + 事实提取（可选，不设则跳过）
+```
+
+### 2. 安装依赖
+
+```bash
+pip install fastapi uvicorn openai langgraph pydantic python-dotenv
+# ArrowCanaria 推理服务还需要:
+pip install torch transformers accelerate bitsandbytes
+```
+
+### 3. 启动推理服务
+
+```bash
+cd arrowcanaria_server
+python server.py   # → http://0.0.0.0:8014
+```
+
+### 4. 启动陪伴服务
+
+```bash
+cd companion
+python -m companion.main   # → http://0.0.0.0:8015
+```
+
+浏览器打开 `http://127.0.0.1:8015` 即可使用。
+
+---
+
+## LangGraph 节点说明
+
+| 节点 | 功能 | 耗时 |
+|------|------|------|
+| `input_guard` | 安全扫描：自杀/虐待/急病关键词检测 → 风险≥3直接返回安全回复 | <1ms |
+| `emotion_detect` | 关键词匹配6种情绪（loneliness/sadness/anxiety/anger/joy/nostalgia）→ 选推理参数 | <1ms |
+| `memory_retrieve` | SQLite 读取用户历史事实（最近10条） | <5ms |
+| `context_assemble` | 组装 PERSONA + 记忆 + 历史消息 → 最终 prompt | <1ms |
+| `generate_response` | 调用 ArrowCanaria 8B 生成回复 | 1-3s |
+| `quality_check` | 启发式质检：过短/冷漠/跑题/重复 → 触发重试（最多2次） | <1ms |
+| `clean_and_translate_and_remember` | 输出清洗 + 并行调用 DeepSeek 翻译 + 事实提取存储 | 1-2s |
+
+### 图结构（含并行 + 循环）
+
+```
+                    ┌─────────────────┐
+                    │  input_guard    │
+                    └───────┬─────────┘
+                            │ risk<3
+              ┌─────────────┼─────────────┐
+              ▼             │             ▼
+     emotion_detect    memory_retrieve    END (risk≥3)
+              │             │
+              └──────┬──────┘
+                     ▼
+            context_assemble
+                     │
+                     ▼
+            generate_response ◄──────────┐
+                     │                    │
+                     ▼                    │ retry
+             quality_check ──────────────┘
+                     │ pass / max retries
+                     ▼
+        clean_and_translate_and_remember
+                     │
+                     ▼
+                    END
+```
+
+---
+
+## 情绪 × 推理参数
+
+不同情绪使用不同的 temperature 和 repetition_penalty，不往 prompt 塞指令：
+
+| 情绪 | temperature | repetition_penalty | 策略 |
+|------|------------|-------------------|------|
+| loneliness | 0.85 | 1.15 | 更主动、更多样 |
+| sadness | 0.70 | 1.10 | 更稳、更安全 |
+| anxiety | 0.65 | 1.10 | 最稳、避免失言 |
+| anger | 0.70 | 1.12 | 稳中带安抚 |
+| joy | 0.85 | 1.12 | 活泼回应 |
+| nostalgia | 0.78 | 1.12 | 温暖共鸣 |
+| neutral | 0.75 | 1.12 | 默认 |
+
+---
+
+## PERSONA 设计
+
+さくら的人设通过 few-shot 示例 + 三条核心规则定义（`companion/nodes.py:20-36`）：
+
+- 必须触及对方说的具体内容
+- 必须用提问结尾，让对方继续说话
+- 用「私も〜」代替「そうですね」表达共情
+
+附带好坏对比示例，8B 模型直接模仿示例的句式和温度。
+
+---
+
+## API 端点
+
+### POST /v1/langgraph/chat
+非流式对话，返回完整 ChatResponse。
+
+```json
+{
+  "user_id": "user001",
+  "session_id": "",
+  "message": "最近腰が痛くてね…"
+}
+```
+
+### POST /v1/langgraph/chat/stream
+流式对话（SSE），按句子边界分段发送，150ms 间隔。
+
+```
+data: {"token": "腰が痛いのは辛いね。", "done": false}
+data: {"token": "病院には行った？", "done": false}
+data: {"token": "", "done": true, "translation": "...", "emotion": {...}}
+```
+
+### GET /v1/langgraph/profile/{user_id}
+获取用户画像和历史事实。
+
+### POST /v1/langgraph/translate
+日语→中文翻译（DeepSeek）。
+
+### POST/GET/DELETE /v1/langgraph/log[s]
+对话日志 CRUD。
+
+---
+
+## 项目结构
+
+```
+养老agent/
+├── companion/                    # 陪伴服务 (:8015)
+│   ├── main.py                   # FastAPI 入口 + 前端托管
+│   ├── api.py                    # REST 端点 (chat/stream/translate/log/profile)
+│   ├── graph.py                  # LangGraph 图定义 (并行fan-out + 质检循环)
+│   ├── state.py                  # GraphState TypedDict
+│   ├── nodes.py                  # 6个节点 + 情绪检测 + PERSONA
+│   ├── safety.py                 # 安全扫描 (自杀/虐待/急病)
+│   ├── memory.py                 # SQLite 用户画像 & 事实存储
+│   └── config.py                 # 常量 (端口/URL/API key)
+│
+├── arrowcanaria_server/          # 推理服务 (:8014)
+│   ├── server.py                 # ArrowCanaria 8B 模型加载 + OpenAI兼容API
+│   └── static/index.html         # 前端聊天界面
+│
+├── training_data/                # 训练数据 (ShareGPT JSONL)
+│   ├── train.jsonl               # 16,125条
+│   ├── val.jsonl                 # 2,016条
+│   └── test.jsonl                # 2,019条
+│
+├── training_data_cn/             # 中文训练数据
+├── dialogs/                      # 手工对话设计稿 (V1-V4, 多语言)
+└── docs/                         # 调研报告 & 修改日志
+```
+
+---
+
+## 训练数据集
+
+用于 Qwen2.5-7B-Instruct LoRA 微调的日语老年关怀对话数据。
 
 | 指标 | 数值 |
 |------|------|
+| 总条数 | 20,160 |
+| 训练/验证/测试 | 16,125 / 2,016 / 2,019 |
 | 平均轮次 | 5.8 轮/对话 |
-| 平均字数 | 263 字/对话 |
-| 人类发言均长 | 45 字 |
-| AI回复均长 | 48 字 |
-| AI去重回复 | 20,745 种 |
-| AI回复重复率 | 63.8% |
-| Top-10回复占比 | 13.1% |
+| 真实数据占比 | 95.7% |
 | 话题数 | 14 |
 | 意图类型 | 8 |
-| 真实数据占比 | 95.7% |
+| AI去重回复 | 20,745 种 |
 
-### 话题分布
-
-| 话题 | 条数 | 占比 |
-|------|------|------|
-| 年金/经济 | 2,888 | 23.9% |
-| 家庭 | 2,579 | 21.4% |
-| 健康 | 1,031 | 8.5% |
-| 兴趣/爱好 | 984 | 8.2% |
-| 工作/职业 | 661 | 5.5% |
-| 怀旧/回忆 | 617 | 5.1% |
-| 孤独 | 259 | 2.1% |
-| 日常生活 | 220 | 1.8% |
-| 养老设施 | 218 | 1.8% |
-| 临终/丧失 | 218 | 1.8% |
-| 感恩/满足 | 165 | 1.4% |
-| 科技/数字 | 24 | 0.2% |
-| 邻里/社区 | 19 | 0.2% |
-| 一般话题 | 2,190 | 18.1% |
-
----
-
-## 数据格式
-
-### 文件格式
-
-ShareGPT JSONL — 每行一个完整的JSON对话对象。
-
-### 完整JSON结构
-
-```json
-{
-  "id": "whisper_v10_W2pW9-R0YfY_0445",
-  "conversations": [
-    {"from": "human", "value": "あのー、年金のことでちょっと相談したいねん。"},
-    {"from": "gpt",   "value": "はい、こんにちは！年金のことで何かお困りですか？"},
-    {"from": "human", "value": "毎月の年金が入っても、家賃と光熱費で半分以上飛んでいくんよ…。"},
-    {"from": "gpt",   "value": "年金のことはご心配ですよね。毎月のやりくり、大変だと思います。"}
-  ],
-  "source": "real_elderly_whisper",
-  "quality": "real_transcribed_v10",
-  "language": "ja",
-  "country_code": "JP",
-  "scenario": "interview: 76歳一人暮らし体験談",
-  "video_id": "W2pW9-R0YfY",
-  "num_turns": 6,
-  "total_chars": 219
-}
-```
-
-### 字段说明
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `id` | string | 唯一标识符。格式：`{来源}_{视频ID}_{序号}` |
-| `conversations` | array | 对话内容数组，ShareGPT标准格式 |
-| `conversations[].from` | string | 角色：`"human"`（老年人）或 `"gpt"`（AI伴侣） |
-| `conversations[].value` | string | 发言内容（日语，含关西方言和口语特征） |
-| `source` | string | 数据来源（见下方来源表） |
-| `quality` | string | 质量标记：`real_transcribed_v10` = V10处理 |
-| `language` | string | 语言代码，固定为 `"ja"` |
-| `country_code` | string | 国家/地区代码，固定为 `"JP"` |
-| `scenario` | string | 场景描述，如 `"interview: 76歳一人暮らし体験談"` |
-| `video_id` | string | 来源视频的YouTube ID（`"?"` 表示非视频来源） |
-| `num_turns` | int | 对话总消息数（human+gpt交替） |
-| `total_chars` | int | 对话总字符数 |
-
-### `conversations` 字段详解
-
-对话数组采用 **human → gpt → human → gpt → ...** 严格交替结构：
-
-- **奇数索引** (0, 2, 4, ...) = `"human"` — 老年人的真实/模拟发言
-- **偶数索引** (1, 3, 5, ...) = `"gpt"` — AI伴侣的回复
-
-每个对话至少4条消息（2轮），最多10条（5轮）。不存在连续同角色的情况。
-
-### `source` 来源枚举
-
-| 值 | 条数 | 说明 |
-|------|------|------|
-| `real_elderly_csv` | 8,180 | manifest.csv 提取的真实老年对话（16视频，专业ASR） |
-| `real_elderly_whisper` | 10,222 | GPU-Whisper转写的YouTube老年采访 |
-| `V9_topic_balanced` | 570 | V9话题平衡补充 |
-| `real_elderly_youtube_v5` | 447 | YouTube VTT字幕提取 |
-| `V5_synthetic` | 285 | AI生成模板对话 |
-| `real_corpus_slice` | 246 | 真实日语对话语料库切片 |
-| `V5_realistic` | 198 | 扩展日常场景 |
-| `V5_cantonese_expanded` | 12 | 粤语对话（历史遗留） |
-
-### 对话样本
-
-```json
-{
-  "id": "whisper_v10_QbnnL0940ew_0015",
-  "conversations": [
-    {
-      "from": "human",
-      "value": "あのー、ちょっと話を聞いてほしいねん。最近ほんまに体が思うように動かんようになってきてなあ…。"
-    },
-    {
-      "from": "gpt",
-      "value": "お体のことをご心配されているんですね。無理をなさらず、ゆっくり休んでください。どんな症状がありますか？"
-    },
-    {
-      "from": "human",
-      "value": "朝起きると腰が痛くて、立つのに時間がかかるんよ。年のせいか、あちこちガタがきてなあ。"
-    },
-    {
-      "from": "gpt",
-      "value": "そうでしたか…。毎朝の痛みは本当に辛いですよね。お薬はきちんと飲めていますか？ご無理なさらないでくださいね。"
-    },
-    {
-      "from": "human",
-      "value": "うん、薬は飲んでるけど、なかなか良くならんのよ。もう歳やから仕方ないんかな…。"
-    },
-    {
-      "from": "gpt",
-      "value": "そんな風に諦めないでくださいね。少しずつでも良くなる方法を一緒に探していきましょう。私はいつでもあなたの味方ですから。"
-    }
-  ],
-  "source": "real_elderly_whisper",
-  "quality": "real_transcribed_v10",
-  "language": "ja",
-  "country_code": "JP",
-  "scenario": "interview: 91歳元看護師長",
-  "video_id": "QbnnL0940ew",
-  "num_turns": 6,
-  "total_chars": 312
-}
-```
-
----
-
-## 人工智能回复系统
-
-AI回复采用 **话题 × 意图 × 情感** 三维匹配：
-
-### 14个话题
-
-`年金` `健康` `家族` `施設` `日常` `孤独` `仕事` `趣味`
-`臨終` `懐旧` `科技` `感恩` `近隣` `一般`
-
-### 8种意图
-
-| 意图 | 识别条件 | 回复策略 |
-|------|---------|---------|
-| `worry`（担忧） | 含「心配」「不安」「怖い」「辛い」 | 先共情，再给建议 |
-| `statement`（陈述） | 默认类型 | 确认+追问 |
-| `question`（提问） | 句尾「か」「？」「かな」 | 尽量回答 |
-| `sharing`（分享） | 含「楽しい」「嬉しい」「好き」 | 肯定+共鸣 |
-| `grief`（哀伤） | 含「亡くなった」「死」「お別れ」 | 陪伴，不急于给建议 |
-| `nostalgia`（怀念） | 含「昔」「若い頃」「昭和」「思い出」 | 鼓励讲述更多 |
-| `confusion`（困惑） | 含「わからない」+ 科技关键词 | 耐心解释 |
-| `gratitude`（感恩） | 含「感謝」「ありがたい」「幸せ」 | 回应感谢 |
-
-### 回复长度策略
-
-- 人类发言 < 20字 → AI追问细节
-- 人类发言 > 80字（长叙事）→ AI先共情再回应，回复更长
-- 意图为 `grief` → 回复不急于给建议，优先陪伴
-
----
-
-## 版本迭代
-
-### 阶段一：手工对话设计（V1-V4）
-
-| 版本 | 形式 | 内容 |
-|------|------|------|
-| V1 | Markdown 文档 | 220轮手工对话（日中对照），22个养老院场景×10轮交互，确立日式老年口吻基调 |
-| V2 | Markdown 文档 | 基于 TDU-Kao 真实语料特征改写，使对话更自然、去除模板化痕迹 |
-| V3 | Markdown 文档 | 引入8种老年用户画像（寡言型/健谈型/方言型/标准语型/温和型/急躁型/怀旧型/简洁型） |
-| V4 | Markdown 文档 | 用真实日语语料库进行校准，统一口语风格，最终版手工对话设计稿 |
-
-### 阶段二：数据工程与迭代（V5-V10.1）
-
-| 版本 | 总条数 | 真实数据 | 平均轮次 | 平均字数 | AI去重回复 | 重复率 | 主要改进 |
-|------|--------|---------|---------|---------|----------|--------|---------|
-| V5 | 794 | 6.2% | - | - | ~10 | - | V4转ShareGPT格式 + 多语言扩展 |
-| V7 | 3,898 | 79.1% | 3.1 | 50 | ~50 | ~99% | Whisper GPU转写 |
-| V8.1 | 3,600+ | 81.6% | 5.0 | 134 | 100+ | - | 说话人识别·丢弃采访者提问 |
-| V8.2 | 4,126 | 81.6% | 5.7 | 183 | 928 | 89.9% | 新增7个视频（191分钟） |
-| V9 | 4,500+ | 75.9% | 6.1 | 250 | 1,800+ | 91.9% | AI回复系统重写·话题补充 |
-| V9.1 | 4,521 | 75.9% | 6.1 | 260 | 2,056 | 81.2% | 变化注入·降低重复率 |
-| V10.1 | 12,073 | 92.7% | 5.8 | 245 | 10,501 | 69.8% | 数据量+167%·14话题·400+模板 |
-| **V10.2** | **20,160** | **95.7%** | **5.7** | **263** | **20,745** | **63.8%** | **新增CSV真实对话·数据量+67%·AI去重×2** |
-
-### V1 — 手工对话设计：确立基调
-
-- 220轮手工编写的中日对照对话，覆盖22个养老院场景
-- 确立了日式老年口吻：老式终止形（じゃ/のう/おる）、关西轻方言、高频怀旧碎念、轻度健忘特征
-- 场景包括：晨间起居、服药管理、散步赏花、失眠、怀念、入浴介助等
-
-### V2 — 基于真实语料的自然化
-
-- 用TDU-Kao日语自然会话语料的统计特征校准V1
-- 去除翻译腔和模板化痕迹
-- 调整填充词密度、句子长度分布、话题转换模式
-
-### V3 — 8种用户画像
-
-- 引入8种老年人格类型：
-  - 寡言型（Taciturn）· 健谈型（Chatterbox）· 方言型（Heavy Dialect）
-  - 标准语型（Educated Standard）· 温和型（Gentle）· 急躁型（Irritable）
-  - 怀旧型（Nostalgic）· 简洁型（Crisp Concise）
-- 每种人格各有不同的发言长度、情感倾向、方言密度
-
-### V4 — 真实语料校准
-
-- 用日语自然会話コーパス进行最终校准
-- 统一口语风格，标记 `<笑い>` `《沈黙》` `[小声]` 等口语特征
-- 手工对话设计阶段的最终版本
-
----
-
-### V5 — 初始合成数据（ShareGPT化）
-
-- 用AI生成了794条对话（15个场景 × 8种人物设定）
-- 真实数据仅占6.2%
-- **问题**：AI回复呈事务型模式（「承知しました」「すぐに手配します」），缺乏关怀感
-
-### V7 — GPU Whisper转写
-
-- 用OpenAI Whisper medium对YouTube老年采访进行语音转文字
-- GPU加速（RTX 4060, fp16），真实数据提升到79.1%
-- **问题**：简单把相邻语音段配对成QA → **72.5%是2轮假对话**（采访者提问→老人回答）
-- 独白视频几乎提取不到数据（W2pW9仅14条）
-
-### V8.1 — 数据质量根本修复
-
-- 实现说话人识别 `is_question()` → 丢弃采访者提问，只保留老年人发言
-- 独白视频特殊处理 → W2pW9: 14条→232条（+1557%）
-- 8话题关键词检测 + AI回复匹配
-- 质量过滤（过滤纯附和词、乱码、2轮以下短对话）
-- 添加自然语音特征（22%填充词、8%关西方言）
-- **成果**：2轮短对话 **72.5% → 0%**，平均字数 **50 → 134**
-
-### V8.2 — 新增7个视频
-
-- GPU转录「年金いくら？」系列7个新视频（191分钟）
-- 视频来源扩展到15个，覆盖更多老年人群像
-- 91歳元看護師長、85歳マック勤務、障がい者家族介護等
-- **成果**：数据量扩大到4,126条
-
-### V9 — AI回复系统重写
-
-- 86个情境化回复模板，按话题×意图×情感匹配
-- 补充不足话题：孤独+300, 施設+250, 日常+200, 健康+150
-- 老年人发言增强：34字→49字（+44%）
-- 批量修复已有数据的泛用AI回复
-- **成果**：AI去重回复 **928 → 1,800+**（+94%）
-
-### V9.1 — 变化注入降低重复率
-
-- 对30%的AI回复随机注入自然语言变化（前缀/后缀/敬语变化/句子重组）
-- **成果**：重复率 **91.9% → 81.2%**，Top-10占比 **50%+ → 18.2%**
-
-### V10.1 — 数据量暴增 + AI系统全面升级
-
-**改进1：挖掘未使用的Whisper数据**
-- 9,046个语音段中只用了2,182个（24.1%）→ 宽松合并（3段→2段）、双窗口策略、密集采样
-- 从Whisper JSON额外提取7,746条对话
-- **Whisper对话数：2,728 → 10,297（+277%）**
-
-**改进2：话题8→14 + 意图4→8**
-- 新增6话题：临终/丧失、怀旧/回忆、科技/数字鸿沟、感恩/满足、邻里/社区
-- 新增4意图：grief、nostalgia、confusion、gratitude
-- 回复模板：**86 → 400+**
-
-**改进3：AI回复质量修复**
-- 扫描全部对话，话题不匹配→85%概率替换
-- AI回复长度自适应（长叙事→长回复，负面情绪→先共情）
-- 合成数据事务型表达重写
-- 关西方言密度：**8% → 12%**
-
-**改进4：变化注入增强**
-- 变化率：**30% → 50%**
-- **成果**：AI去重回复 **2,056 → 10,501**（+411%），重复率 **81.2% → 69.8%**
-
-### V10.2 — manifest.csv 真实对话注入
-
-**改进**：
-- 用户提供的 `manifest.csv` 包含16个视频的专业ASR转写（3,163段，194,792字），比Whisper多33%
-- 用 `is_question()` 分离采访者提问和老年人回答
-- 提取8,361条真实老年对话，与V10.1合并
-- **成果**：总数据 **12,073 → 20,160**（+67%），真实数据率 **92.7% → 95.7%**，AI去重回复 **10,501 → 20,745**（+98%），重复率 **69.8% → 63.8%**
-
----
-
-## 使用方法
+数据来源：YouTube 老年采访的 GPU-Whisper 转写 + 专业 ASR（manifest.csv），覆盖年金、健康、家庭、孤独、怀旧等14个话题。
 
 ### LLaMA-Factory 微调
 
@@ -329,21 +239,10 @@ llamafactory-cli train \
   --lora_alpha 32 \
   --learning_rate 2e-5 \
   --num_train_epochs 3 \
-  --per_device_train_batch_size 4 \
-  --gradient_accumulation_steps 8 \
   --output_dir ./output/elderly-care-lora
 ```
 
-### 文件结构
-
-```
-training_data/
-├── train.jsonl     9,655 条 — 训练集
-├── val.jsonl       1,208 条 — 验证集
-├── test.jsonl      1,210 条 — 测试集
-├── metadata.json          — 元数据
-└── DATACARD.md            — 数据卡片（英文版）
-```
+详细数据说明见 [CHANGELOG.md](CHANGELOG.md) 和 [training_data/DATACARD.md](training_data/DATACARD.md)。
 
 ---
 
@@ -351,12 +250,16 @@ training_data/
 
 | 组件 | 技术 |
 |------|------|
-| 语音转文字 | OpenAI Whisper medium + faster-whisper large-v3 (GPU) |
-| 数据格式 | ShareGPT JSONL |
-| 目标模型 | Qwen2.5-7B-Instruct |
+| 推理模型 | ArrowCanaria-Llama-8B-SFT-v0.1 (4-bit QLoRA) |
+| 推理引擎 | PyTorch + Transformers + SDPA |
+| 编排框架 | LangGraph (StateGraph + checkpoint) |
+| Web 框架 | FastAPI + Uvicorn |
+| 翻译/提取 | DeepSeek API (并行 ThreadPoolExecutor) |
+| 存储 | SQLite (对话日志 + 用户画像 + 事实记忆) |
+| 前端 | 原生 HTML/JS (SSE via XHR readyState=3) |
+| 训练数据格式 | ShareGPT JSONL |
 | 微调框架 | LLaMA-Factory (LoRA) |
-| 语言特征 | 日语 + 关西方言（~12%）+ 口语填充词（~25%） |
 
 ---
 
-> V10.2 · 2026年7月 · [BocrieM11/Query-data](https://github.com/BocrieM11/Query-data)
+> 2026年7月 · [BocrieM11/Query-data](https://github.com/BocrieM11/Query-data)

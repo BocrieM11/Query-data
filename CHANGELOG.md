@@ -1,9 +1,89 @@
-# 日语老年关怀AI伴侣数据集 更新日志
+# 日语老年关怀AI伴侣 更新日志
 
-> **项目**：AI老年关怀伴侣微调训练数据集  
+> **项目**：AI老年关怀伴侣 — 训练数据集 + Companion 服务端  
 > **格式**：ShareGPT JSONL（日语 + 关西方言）  
 > **目标模型**：Qwen2.5-7B-Instruct（LoRA / LLaMA-Factory）  
-> **最后更新**：2026年7月1日（V10.1）
+> **最后更新**：2026年7月9日
+
+---
+
+## 2026-07-09 — 移除 quality_check 重试节点
+
+### Companion 服务端
+
+删除了 LangGraph 的 `quality_check` 质检重试节点及相关代码：
+
+- **nodes.py** — 删除 `quality_check()` 函数、`COLD_PATTERNS`、`MAX_RETRIES`，移除 `generate_response` 中的 `retry_count` 温控逻辑
+- **graph.py** — 删除 `quality_check` 节点和 `_after_quality` 条件路由，`generate_response` 直连 `clean_translate_remember`
+- **state.py** — 移除 `retry_count` 和 `quality_pass` 字段
+- **api.py** — 移除相关 import 和 state 初始化值
+
+**原因**：流式接口 `/chat/stream` 不走 Graph，quality_check 从未被触发。非流式 `/chat` 同步受影响，但当前以流式为主。
+
+---
+
+## 2026-07-09 — Companion 服务端多项修复与优化
+
+### 情感标签系统全面修复
+
+**问题**：模型输出的情感标签经常与用户实际情绪不匹配（如用户说"伤心"但模型输出 `[neutral]`），且标签以纯文本 `[happy]` 形式显示，无视觉区分。
+
+**修复方案**：
+
+1. **标签后处理强制覆盖** (`nodes.py` clean_and_translate_and_remember)：
+   - 从模型回复中剥离所有 `[xxx]` 标签
+   - 根据 emotion_detect 节点的检测结果，在回复开头重新插入正确标签
+   - 新增 `EMOTION_TO_TAG` 映射表，确保检测到的情绪映射到正确标签
+
+2. **情感检测关键词扩充** (`nodes.py` EMOTION_MAP)：
+   - 新增 `surprise`（惊讶）、`blush`（害羞）、`excited`（兴奋）三个情感类别
+   - 所有 9 个类别新增中文关键词
+   - sadness 新增身体疼痛关键词：`"痛", "痛く", "痛み", "疼"`
+   - blush 新增获奖相关词：`"受賞", "賞をもら", "賞を取", "入賞"`
+
+3. **移除情感引导注入** (`nodes.py` context_assemble)：
+   - 删除 system prompt 中的 `[今回の推奨タグ]` 情感引导
+   - **原因**：引导文本导致模型输出元文本（chain-of-thought），污染回复内容
+
+### 前端标签徽章与宠物动画
+
+- **index.html** — 修复文件头部 1818 字节乱码
+- 新增 `.emotion-badge` CSS（8 种颜色对应 8 个情感标签）
+- 聊天气泡中自动提取并渲染彩色标签徽章
+- 会话历史侧边栏显示标签名称
+- 回放面板显示标签徽章（`extractTag()` + `stripTags()`）
+- 宠物头像根据情感变化播放 CSS 动画（`petBounce`, `petShake`, `petJump`, `petSway`）
+- 流式 SSE 的 done 事件中发送 `tag` 字段，前端使用 `serverTag` 而非模型原始标签
+
+### 翻译功能移除
+
+- **api.py** — 删除 `/translate` 端点、`TranslateRequest` 模型、DeepSeek 客户端初始化
+- **ChatResponse** 模型移除 `translation` 字段
+- 流式输出 done 事件先于翻译处理发送
+
+**原因**：翻译步骤在流式输出完成后才执行，导致用户感知延迟增加。用户确认删除该功能。
+
+### 端口迁移 8015→8016
+
+- 端口 8015 被僵尸进程（PID 28188）占用且无法终止
+- 所有服务迁移至 8016 端口
+
+### 部署脚本修复
+
+- **start.bat** — 修复 `cd companion && python -m companion.main` 路径错误 → `python -m companion.main`（从部署根目录运行）
+- **start.sh** — 同样修复 Linux 版启动命令
+- 部署包 10 个文件全部与工作目录同步
+
+### 涉及文件
+
+| 文件 | 变更 |
+|------|------|
+| `companion/nodes.py` | EMOTION_MAP 扩充、标签强制覆盖、移除情感引导 |
+| `companion/api.py` | 删除翻译、新增 tag 字段、端口 8016 |
+| `arrowcanaria_server/static/index.html` | 修复乱码、标签徽章、宠物动画、历史记录标签 |
+| `deploy/sakura-companion/start.bat` | 修复启动路径 |
+| `deploy/sakura-companion/start.sh` | 修复启动路径 |
+| `deploy/sakura-companion/README.md` | 更新架构图、情感表、启动说明 |
 
 ---
 
